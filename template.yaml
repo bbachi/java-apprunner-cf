@@ -1,0 +1,64 @@
+
+AWSTemplateFormatVersion: "2010-09-09"
+Description: App Runner Template for Java RestApi
+
+Parameters:
+  JavaAPIPort:
+    Type: Number
+    Description: The Port that Java API listening on
+    Default: 8080
+    AllowedValues:
+      - 8080
+      - 8081
+      - 8082
+  GitHubBranch:
+    Type: String
+    Description: GitHub Branch you want to deploy
+    Default: master
+  Environment:
+    Type: String
+    Description: Environment to Deploy
+  WelcomeMessage:
+    Type: String
+    Description: Welcome Message for the API
+
+Resources:
+  JavaRestAPI:
+    Type: AWS::AppRunner::Service
+    Properties:
+      ServiceName: !Sub RESTAPI-${Environment}
+      SourceConfiguration:
+        AuthenticationConfiguration:
+          ConnectionArn: "arn:aws:apprunner:us-east-2:864227929192:connection/DemoConnection/aaec8e02677441bb9c22343ca394dadb"
+        AutoDeploymentsEnabled: true
+        CodeRepository:
+          RepositoryUrl: "https://github.com/bbachi/java-webservice-example.git"
+          SourceCodeVersion:
+            Type: BRANCH
+            Value: !Ref GitHubBranch
+          CodeConfiguration:
+            ConfigurationSource: API
+            CodeConfigurationValues:
+              Runtime: CORRETTO_11
+              BuildCommand: "mvn clean package"
+              StartCommand: "java -jar target/todo.jar -Xms256m"
+              Port: !Ref JavaAPIPort
+              RuntimeEnvironmentVariables:
+                -
+                  Name: API_WORKS_MESSAGE
+                  Value: !Ref WelcomeMessage
+      InstanceConfiguration:
+        Cpu: 1 vCPU
+        Memory: 2 GB
+        
+Outputs:
+  AppRunnerServiceArn:
+    Description: ServiceArn of GitHub
+    Value: !GetAtt JavaRestAPI.ServiceArn
+  AppRunnerServiceId:
+    Description: AppRunnerServiceId
+    Value: !GetAtt JavaRestAPI.ServiceId
+  AppRunnerServiceUrl:
+    Description: AppRunnerServiceUrl
+    Value: !GetAtt JavaRestAPI.ServiceUrl
+
